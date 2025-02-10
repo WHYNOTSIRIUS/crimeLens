@@ -11,6 +11,8 @@ interface IUser extends Document {
   bio?: string;
   contactInfo?: string;
   isBanned: boolean; // ✅ Added isBanned field
+  resetOtp?: string; // ✅ Added OTP field
+  resetOtpExpiry?: number; // ✅ Added OTP Expiry field
 }
 
 const userSchema: Schema<IUser> = new Schema(
@@ -29,6 +31,8 @@ const userSchema: Schema<IUser> = new Schema(
     bio: { type: String },
     contactInfo: { type: String },
     isBanned: { type: Boolean, default: false }, // ✅ Default is false
+    resetOtp: { type: String, default: null }, // ✅ OTP for password reset
+    resetOtpExpiry: { type: Number, default: null }, // ✅ OTP Expiry timestamp
   },
   { timestamps: true }
 );

@@ -8,6 +8,8 @@ import {
   getUserReports,
   login,
   logout,
+  requestPasswordReset,
+  resetPassword,
   signup,
   toggleBanUser,
   updateProfile,
@@ -40,6 +42,11 @@ userRouter.put("/change-password", authenticateUser, changePassword); //tested a
 
 // Phone Number Verification
 userRouter.post("/verify-phone", authenticateUser, verifyPhone); //tested and working ✅
+
+// reset password
+
+userRouter.post("/forgot-password", requestPasswordReset);
+userRouter.post("/reset-password", resetPassword);
 
 // Admin - Manage Users
 userRouter.get(

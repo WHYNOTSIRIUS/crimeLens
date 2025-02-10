@@ -1,13 +1,16 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Request, Response, NextFunction } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import createHttpError from "http-errors";
+import crypto from "crypto";
 import User from "../models/userModel";
 import { AuthRequest } from "../types/AuthRequest";
 import { config } from "../config/config"; // Ensure JWT secret is stored securely
 import mongoose from "mongoose";
 
 import CrimeReport from "../models/crimeReportModel";
+import { sendMail } from "../middlewares/mailControl";
 
 // Helper function to generate JWT token
 const generateToken = (userId: string) => {
@@ -367,6 +370,135 @@ export const changePassword = async (
 
     res.status(200).json({ message: "Password changed successfully" });
   } catch (error) {
+    next(createHttpError(500, "Internal Server Error"));
+  }
+};
+
+/**
+ * @desc Request Password Reset (Send OTP)
+ * @route POST /api/auth/forgot-password
+ * @access Public
+ */
+
+/**
+ * @desc Request Password Reset (Send OTP)
+ * @route POST /api/auth/forgot-password
+ * @access Public
+ */
+export const requestPasswordReset = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return next(createHttpError(400, "Email is required"));
+    }
+
+    // Check if the user exists
+    const user = await User.findOne({ email });
+    if (!user) {
+      return next(createHttpError(404, "User not found"));
+    }
+
+    // Generate OTP
+    const otp = crypto.randomInt(100000, 999999).toString();
+    const otpExpiry = Date.now() + 10 * 60 * 1000; // OTP expires in 10 minutes
+
+    // Store OTP in the database
+    user.resetOtp = otp;
+    user.resetOtpExpiry = otpExpiry;
+    await user.save();
+
+    console.log("✅ Generated OTP:", otp, " for user:", email);
+
+    // Send OTP via email
+    await sendMail(
+      {
+        subject: "Password Reset OTP",
+        text: `Your OTP for password reset is: ${otp}. It will expire in 10 minutes.`,
+        to: user.email,
+        hmtl: `<p>Your OTP for password reset is: <strong>${otp}</strong>. It will expire in 10 minutes.</p>`,
+      },
+      req,
+      res,
+      next
+    );
+
+    res.status(200).json({ message: "OTP sent successfully" });
+  } catch (error) {
+    console.error("❌ Error sending OTP:", error);
+    next(createHttpError(500, "Internal Server Error"));
+  }
+};
+
+/**
+ * @desc Verify OTP and Reset Password
+ * @route POST /api/auth/reset-password
+ * @access Public
+ */
+/**
+ * @desc Verify OTP and Reset Password
+ * @route POST /api/auth/reset-password
+ * @access Public
+ */
+export const resetPassword = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    if (!email || !otp || !newPassword) {
+      return next(
+        createHttpError(400, "Email, OTP, and new password are required")
+      );
+    }
+
+    // Find user by email
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      console.error("❌ User not found for email:", email);
+      return next(createHttpError(404, "User not found"));
+    }
+
+    // Debugging logs
+    // console.log("🔍 Checking OTP for user:", email);
+    // console.log("Stored OTP in DB:", user.resetOtp);
+    // console.log("Received OTP from request:", otp);
+    // console.log("Stored OTP Expiry:", user.resetOtpExpiry);
+    // console.log("Current Time:", Date.now());
+
+    // Check if OTP is correct and not expired
+    if (
+      !user.resetOtp ||
+      user.resetOtp !== otp ||
+      !user.resetOtpExpiry ||
+      Date.now() > user.resetOtpExpiry
+    ) {
+      console.error("❌ Invalid or expired OTP");
+      return next(createHttpError(400, "Invalid or expired OTP"));
+    }
+
+    // Hash new password
+    // console.log("🔒 Hashing new password...");
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update password and remove OTP
+    user.password = hashedPassword;
+    user.resetOtp = undefined;
+    user.resetOtpExpiry = undefined;
+
+    // console.log("✅ Password updated successfully for user:", email);
+
+    await user.save();
+
+    res.status(200).json({ message: "Password reset successfully" });
+  } catch (error) {
+    console.error("❌ Error resetting password:", error);
     next(createHttpError(500, "Internal Server Error"));
   }
 };
