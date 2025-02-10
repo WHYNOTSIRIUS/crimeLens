@@ -16,17 +16,19 @@ export const createReport = async (
   next: NextFunction
 ) => {
   try {
-    const { title, description, division, district, crimeTime, images, video } =
+    const { title, description, division, district, crimeTime, video } =
       req.body;
 
-    console.log("✅ Received Data:", req.body); // Debugging log
+    // console.log("✅ Received Data:", req.body); // Debugging log
 
     if (!title || !description || !division || !district || !crimeTime) {
       return next(createHttpError(400, "All fields are required"));
     }
 
-    // ✅ Ensure images array is correctly structured
-    if (!images || !Array.isArray(images) || images.length === 0) {
+    // ✅ Cloudinary URLs are now stored in req.body.images
+    const images = req.body.images || [];
+
+    if (images.length === 0) {
       return next(createHttpError(400, "At least one image is required"));
     }
 

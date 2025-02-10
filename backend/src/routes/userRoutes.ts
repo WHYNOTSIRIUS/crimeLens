@@ -45,8 +45,8 @@ userRouter.post("/verify-phone", authenticateUser, verifyPhone); //tested and wo
 
 // reset password
 
-userRouter.post("/forgot-password", requestPasswordReset);
-userRouter.post("/reset-password", resetPassword);
+userRouter.post("/forgot-password", requestPasswordReset); //tested and working ✅
+userRouter.post("/reset-password", resetPassword); //tested and working ✅
 
 // Admin - Manage Users
 userRouter.get(

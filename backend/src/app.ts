@@ -1,8 +1,6 @@
 // seting up the express app
 import express from "express";
 import globalErrorHandler from "./middlewares/globalErrorHandler";
-
-import bookRouter from "./book/bookRouter";
 import userRouter from "./routes/userRoutes";
 import crimeReportRouter from "./routes/crimeReportRouter";
 import voteRouter from "./routes/voteRouter";
@@ -20,7 +18,6 @@ app.get("/", (req, res) => {
 
 console.log("✅ app.ts: Registering user routes at /api/users");
 app.use("/api/users", userRouter);
-app.use("/api/books", bookRouter);
 app.use("/api/report", crimeReportRouter);
 app.use("/api/vote", voteRouter);
 app.use("/api/comment", commentRouter);
