@@ -19,19 +19,29 @@ export const createReport = async (
     const { title, description, division, district, crimeTime, video } =
       req.body;
 
-    // console.log("✅ Received Data:", req.body); // Debugging log
+    console.log("✅ Received Data:", req.body); // Debugging log
 
+    // 🔹 Check required fields
     if (!title || !description || !division || !district || !crimeTime) {
       return next(createHttpError(400, "All fields are required"));
     }
 
-    // ✅ Cloudinary URLs are now stored in req.body.images
+    // 🔹 Validate images array
     const images = req.body.images || [];
-
-    if (images.length === 0) {
+    if (!Array.isArray(images) || images.length === 0) {
       return next(createHttpError(400, "At least one image is required"));
     }
 
+    // 🔹 Validate video format (optional)
+    let videoUrl = null;
+    if (video) {
+      if (typeof video !== "string" || !video.startsWith("http")) {
+        return next(createHttpError(400, "Invalid video URL format"));
+      }
+      videoUrl = video;
+    }
+
+    // 🔹 Create new crime report
     const newReport = new CrimeReport({
       user: req.userId,
       title,
@@ -40,7 +50,7 @@ export const createReport = async (
       district,
       crimeTime,
       images,
-      video: video || null,
+      video: videoUrl, // Store validated video URL
     });
 
     await newReport.save();
@@ -52,7 +62,11 @@ export const createReport = async (
       report: newReport,
     });
   } catch (error) {
-    console.error("❌ Error in createReport:", error);
+    console.error(
+      "❌ Error in createReport:",
+      error instanceof Error ? error.message : "Unknown error",
+      error instanceof Error ? error.stack : ""
+    );
     next(createHttpError(500, "Internal Server Error"));
   }
 };

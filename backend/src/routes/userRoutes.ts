@@ -9,12 +9,14 @@ import {
   login,
   logout,
   requestPasswordReset,
+  requestPhoneVerification,
   resetPassword,
   signup,
   toggleBanUser,
   updateProfile,
   verifyPhone,
 } from "../controller/userController";
+import { sendOtp, verifyOtp } from "../middlewares/firebaseAuth";
 
 const userRouter = express.Router();
 
@@ -41,7 +43,8 @@ userRouter.put("/profile", authenticateUser, updateProfile); //tested and workin
 userRouter.put("/change-password", authenticateUser, changePassword); //tested and working ✅
 
 // Phone Number Verification
-userRouter.post("/verify-phone", authenticateUser, verifyPhone); //tested and working ✅
+userRouter.post("/request-phone-verification", authenticateUser, sendOtp); //tested and working ✅
+userRouter.post("/verify-phone", authenticateUser, verifyOtp); //tested and working ✅
 
 // reset password
 

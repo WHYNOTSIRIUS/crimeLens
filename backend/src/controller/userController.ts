@@ -11,6 +11,7 @@ import mongoose from "mongoose";
 
 import CrimeReport from "../models/crimeReportModel";
 import { sendMail } from "../middlewares/mailControl";
+import { sendOtp, verifyOtp } from "../service/twilloService";
 
 // Helper function to generate JWT token
 const generateToken = (userId: string) => {
@@ -225,27 +226,27 @@ export const updateProfile = async (
  * @desc Verify phone number (Admin not required)
  * @route POST /api/users/verify-phone
  */
-export const verifyPhone = async (
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    const { phoneNumber } = req.body;
+// export const verifyPhone = async (
+//   req: AuthRequest,
+//   res: Response,
+//   next: NextFunction
+// ) => {
+//   try {
+//     const { phoneNumber } = req.body;
 
-    const user = await User.findOne({ phoneNumber });
-    if (!user) {
-      return next(createHttpError(404, "User not found"));
-    }
+//     const user = await User.findOne({ phoneNumber });
+//     if (!user) {
+//       return next(createHttpError(404, "User not found"));
+//     }
 
-    user.isVerified = true;
-    await user.save();
+//     user.isVerified = true;
+//     await user.save();
 
-    res.status(200).json({ message: "Phone number verified successfully" });
-  } catch (error) {
-    next(createHttpError(500, "Internal Server Error"));
-  }
-};
+//     res.status(200).json({ message: "Phone number verified successfully" });
+//   } catch (error) {
+//     next(createHttpError(500, "Internal Server Error"));
+//   }
+// };
 
 /**
  * @desc Get all users (Admin Only)
@@ -499,6 +500,77 @@ export const resetPassword = async (
     res.status(200).json({ message: "Password reset successfully" });
   } catch (error) {
     console.error("❌ Error resetting password:", error);
+    next(createHttpError(500, "Internal Server Error"));
+  }
+};
+
+export const requestPhoneVerification = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { phoneNumber } = req.body;
+
+    if (!phoneNumber) {
+      return next(createHttpError(400, "Phone number is required"));
+    }
+
+    // Check if the user exists
+    const user = await User.findOne({ phoneNumber });
+    if (!user) {
+      return next(createHttpError(404, "User not found"));
+    }
+
+    if (user.isVerified) {
+      return next(createHttpError(400, "User is already verified"));
+    }
+
+    // Send OTP via Twilio
+    await sendOtp(phoneNumber);
+
+    res.status(200).json({ message: "OTP sent successfully" });
+  } catch (error) {
+    console.error("❌ Error requesting phone verification:", error);
+    next(createHttpError(500, "Internal Server Error"));
+  }
+};
+
+export const verifyPhone = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { phoneNumber, otp } = req.body;
+
+    if (!phoneNumber || !otp) {
+      return next(createHttpError(400, "Phone number and OTP are required"));
+    }
+
+    // Check if the user exists
+    const user = await User.findOne({ phoneNumber });
+    if (!user) {
+      return next(createHttpError(404, "User not found"));
+    }
+
+    if (user.isVerified) {
+      return next(createHttpError(400, "User is already verified"));
+    }
+
+    // Verify OTP
+    const isValidOtp = await verifyOtp(phoneNumber, otp);
+    if (!isValidOtp) {
+      return next(createHttpError(400, "Invalid or expired OTP"));
+    }
+
+    // Mark user as verified
+    user.isVerified = true;
+    await user.save();
+
+    res.status(200).json({ message: "Phone number verified successfully" });
+  } catch (error) {
+    console.error("❌ Error verifying phone number:", error);
     next(createHttpError(500, "Internal Server Error"));
   }
 };
