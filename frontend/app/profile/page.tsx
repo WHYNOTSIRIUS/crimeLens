@@ -9,42 +9,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { CalendarDays, MapPin, Phone, Mail, Shield } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-
-// Temporary type definitions until we have the actual types
-interface User {
-  id: string;
-  displayName: string;
-  email: string;
-  phoneNumber: string;
-  profileImage: string;
-  bio: string;
-  contactInfo: string;
-  verified: boolean;
-  createdAt: string;
-}
-
-interface CrimeReport {
-  id: string;
-  title: string;
-  location: string;
-  crimeType: string;
-  description: string;
-  date: string;
-  status: "pending" | "verified" | "resolved";
-  createdAt: string;
-}
+import { User } from "@/lib/types";
 
 // Temporary dummy data
 const dummyUser: User = {
   id: "1",
   displayName: "John Doe",
   email: "john@example.com",
-  phoneNumber: "+880 1234567890",
-  profileImage: "/default-avatar.png",
+  phone: "+880 1234567890",
+  image: "/default-avatar.png",
   bio: "Committed to making our community safer.",
   contactInfo: "Available 9 AM - 5 PM",
-  verified: true,
-  createdAt: "2024-01-01",
+  role: "user",
+  createdAt: new Date("2024-01-01"),
 };
 
 const dummyReports: CrimeReport[] = [
@@ -56,10 +33,21 @@ const dummyReports: CrimeReport[] = [
     description: "Observed suspicious behavior near the playground area.",
     date: "2024-02-10",
     status: "verified",
-    createdAt: "2024-02-10T14:30:00Z",
+    createdAt: new Date("2024-02-10T14:30:00Z"),
   },
   // Add more dummy reports as needed
 ];
+
+interface CrimeReport {
+  id: string;
+  title: string;
+  location: string;
+  crimeType: string;
+  description: string;
+  date: string;
+  status: "pending" | "verified" | "resolved";
+  createdAt: Date;
+}
 
 export default function ProfilePage() {
   const [user, setUser] = useState<User>(dummyUser);
@@ -88,12 +76,12 @@ export default function ProfilePage() {
             <div className="flex flex-col items-center space-y-4">
               <div className="relative w-32 h-32">
                 <Image
-                  src={user.profileImage}
+                  src={user.image || '/default-avatar.png'}
                   alt={user.displayName}
                   fill
                   className="rounded-full object-cover"
                 />
-                {user.verified && (
+                {user.role === "admin" && (
                   <div className="absolute bottom-0 right-0">
                     <Badge variant="default" className="gap-1">
                       <Shield className="h-3 w-3" />
@@ -104,7 +92,7 @@ export default function ProfilePage() {
               </div>
               <div className="text-center">
                 <h2 className="text-2xl font-bold">{user.displayName}</h2>
-                <p className="text-muted-foreground">Member since {formatDistanceToNow(new Date(user.createdAt), { addSuffix: true })}</p>
+                <p className="text-muted-foreground">Member since {user.createdAt ? formatDistanceToNow(user.createdAt, { addSuffix: true }) : 'unknown'}</p>
               </div>
             </div>
 
@@ -115,7 +103,7 @@ export default function ProfilePage() {
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-muted-foreground" />
-                <span>{user.phoneNumber}</span>
+                <span>{user.phone}</span>
               </div>
               {user.contactInfo && (
                 <div className="flex items-center gap-2">
@@ -168,7 +156,7 @@ export default function ProfilePage() {
                     </div>
                     <p className="text-muted-foreground">{report.description}</p>
                     <div className="mt-4 text-sm text-muted-foreground">
-                      Reported {formatDistanceToNow(new Date(report.createdAt), { addSuffix: true })}
+                      Reported {formatDistanceToNow(report.createdAt, { addSuffix: true })}
                     </div>
                   </CardContent>
                 </Card>

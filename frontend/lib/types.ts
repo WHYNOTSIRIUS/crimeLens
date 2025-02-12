@@ -1,11 +1,12 @@
 export interface User {
     id: string;
-    name: string;
+    displayName: string;
     email: string;
     phone?: string;
     image?: string;
     bio?: string;
     role?: string;
+    contactInfo?: string;
     createdAt?: Date;
     updatedAt?: Date;
 }

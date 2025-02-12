@@ -28,13 +28,13 @@ export function EditProfileDialog({ user, trigger, onProfileUpdate }: EditProfil
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    name: user.name || "",
+    displayName: user.displayName || "",
     bio: user.bio || "",
     contactInfo: user.contactInfo || "",
-    profileImage: user.profileImage || "",
+    image: user.image || "",
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState(user.profileImage || "");
+  const [imagePreview, setImagePreview] = useState(user.image || "");
   const { toast } = useToast();
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -55,7 +55,7 @@ export function EditProfileDialog({ user, trigger, onProfileUpdate }: EditProfil
       setLoading(true);
 
       // TODO: Handle image upload to storage service
-      let imageUrl = user.profileImage;
+      let imageUrl = user.image;
       if (imageFile) {
         // Implement image upload logic here
         imageUrl = imagePreview; // Temporary, replace with actual uploaded URL
@@ -63,7 +63,7 @@ export function EditProfileDialog({ user, trigger, onProfileUpdate }: EditProfil
 
       const updatedData = {
         ...formData,
-        profileImage: imageUrl,
+        image: imageUrl,
       };
 
       // TODO: Implement API call to update profile
@@ -134,11 +134,11 @@ export function EditProfileDialog({ user, trigger, onProfileUpdate }: EditProfil
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="name">Name</Label>
+            <Label htmlFor="displayName">Display Name</Label>
             <Input
-              id="name"
-              name="name"
-              value={formData.name}
+              id="displayName"
+              name="displayName"
+              value={formData.displayName}
               onChange={handleChange}
               required
             />
