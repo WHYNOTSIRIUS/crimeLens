@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,33 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { CalendarDays, MapPin, Phone, Mail, Shield } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { User } from "@/lib/types";
-
-// Temporary dummy data
-const dummyUser: User = {
-  id: "1",
-  displayName: "John Doe",
-  email: "john@example.com",
-  phone: "+880 1234567890",
-  image: "/default-avatar.png",
-  bio: "Committed to making our community safer.",
-  contactInfo: "Available 9 AM - 5 PM",
-  role: "user",
-  createdAt: new Date("2024-01-01"),
-};
-
-const dummyReports: CrimeReport[] = [
-  {
-    id: "1",
-    title: "Suspicious Activity in Park",
-    location: "Central Park, Dhaka",
-    crimeType: "suspicious_activity",
-    description: "Observed suspicious behavior near the playground area.",
-    date: "2024-02-10",
-    status: "verified",
-    createdAt: new Date("2024-02-10T14:30:00Z"),
-  },
-  // Add more dummy reports as needed
-];
+import { CrimeReport } from "@/lib/types";
+import { fetchUser, fetchReports } from "@/lib/api";
 
 interface CrimeReport {
   id: string;
@@ -50,12 +25,31 @@ interface CrimeReport {
 }
 
 export default function ProfilePage() {
-  const [user, setUser] = useState<User>(dummyUser);
-  const [reports] = useState<CrimeReport[]>(dummyReports);
+  const [user, setUser] = useState<User | null>(null);
+  const [reports, setReports] = useState<CrimeReport[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const userData = await fetchUser();
+      setUser(userData);
+    };
+
+    const fetchReportsData = async () => {
+      const reportsData = await fetchReports();
+      setReports(reportsData);
+    };
+
+    Promise.all([fetchUserData(), fetchReportsData()]).then(() => setLoading(false));
+  }, []);
 
   const handleProfileUpdate = (updatedData: Partial<User>) => {
     setUser((prev) => ({ ...prev, ...updatedData }));
   };
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">

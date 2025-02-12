@@ -10,3 +10,13 @@ export interface User {
     createdAt?: Date;
     updatedAt?: Date;
 }
+
+export interface CrimeReport {
+    id: string;
+    title: string;
+    description: string;
+    location: string;
+    reportedBy: User;
+    createdAt?: Date;
+    updatedAt?: Date;
+}

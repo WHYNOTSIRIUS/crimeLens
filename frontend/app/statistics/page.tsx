@@ -1,62 +1,85 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { CrimeHeatmap } from "@/components/crime-heatmap";
 import { Leaderboard } from "@/components/leaderboard";
+import { Loader2 } from "lucide-react";
 
-interface CrimeLocation {
-  lat: number;
-  lng: number;
-  weight?: number;
+interface StatsData {
+  users: {
+    id: string;
+    name: string;
+    avatar: string;
+    verified: boolean;
+    reports: number;
+    upvotes: number;
+    comments: number;
+  }[];
+  locations: {
+    lat: number;
+    lng: number;
+    weight?: number;
+    id?: string;
+    title?: string;
+    time?: string;
+    division?: string;
+    district?: string;
+  }[];
 }
 
 export default function StatisticsPage() {
-  const [crimeLocations, setCrimeLocations] = useState<CrimeLocation[]>([]);
-  const [topContributors, setTopContributors] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<StatsData | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch crime locations for heatmap
-        const locationsResponse = await fetch("/api/crimes/locations");
-        const locationsData = await locationsResponse.json();
-        setCrimeLocations(locationsData);
-
-        // Fetch top contributors
-        const contributorsResponse = await fetch("/api/users/top-contributors");
-        const contributorsData = await contributorsResponse.json();
-        setTopContributors(contributorsData);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      } finally {
-        setLoading(false);
+        const response = await fetch("/api/stats");
+        if (!response.ok) {
+          throw new Error("Failed to fetch statistics");
+        }
+        const stats = await response.json();
+        setData(stats);
+      } catch (err) {
+        console.error("Error fetching statistics:", err);
+        setError(err instanceof Error ? err.message : "Failed to load statistics");
       }
     };
 
     fetchData();
   }, []);
 
-  if (loading) {
-    return <div>Loading statistics...</div>;
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[600px]">
+        <div className="text-center">
+          <p className="text-red-500 font-medium mb-2">Error</p>
+          <p className="text-sm text-gray-600">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="flex items-center justify-center min-h-[600px]">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-500 mx-auto mb-4" />
+          <p className="text-gray-600">Loading statistics...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="container mx-auto py-8 space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Crime Statistics</h1>
-        <p className="text-gray-600 mb-6">
-          View crime hotspots and top community contributors
-        </p>
-      </div>
-
+    <div className="container py-8">
+      <h1 className="text-3xl font-bold mb-8">Crime Statistics</h1>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
-          <h2 className="text-xl font-semibold mb-4">Crime Hotspots</h2>
-          <CrimeHeatmap crimeLocations={crimeLocations} />
+          <CrimeHeatmap crimeLocations={data.locations} />
         </div>
         <div>
-          <Leaderboard users={topContributors} />
+          <Leaderboard users={data.users} />
         </div>
       </div>
     </div>

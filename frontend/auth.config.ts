@@ -1,54 +1,37 @@
-import type { NextAuthConfig } from "next-auth";
-import Credentials from "next-auth/providers/credentials";
-import { dummyUsers } from "./lib/dummy-data";
+import type { NextAuthConfig } from 'next-auth';
+import Credentials from 'next-auth/providers/credentials';
 
 export const authConfig = {
+  providers: [
+    Credentials({
+      async authorize(credentials) {
+        // This is a temporary mock authentication
+        // Replace this with your actual authentication logic
+        if (credentials.email === 'user@example.com' && credentials.password === 'password') {
+          return {
+            id: '1',
+            email: 'user@example.com',
+            name: 'Test User',
+          };
+        }
+        return null;
+      },
+    }),
+  ],
   pages: {
-    signIn: "/login",
+    signIn: '/login',
   },
   callbacks: {
-    authorized({ auth, request: { nextUrl } }: { auth: any, request: { nextUrl: any } }) {
+    authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
-      const isOnDashboard = nextUrl.pathname.startsWith("/dashboard");
+      const isOnDashboard = nextUrl.pathname.startsWith('/dashboard');
       if (isOnDashboard) {
         if (isLoggedIn) return true;
-        return false;
+        return false; // Redirect unauthenticated users to login page
       } else if (isLoggedIn) {
         return true;
       }
       return true;
     },
-    jwt({ token, user }: { token: any, user: any }) {
-      if (user) {
-        token.id = user.id;
-      }
-      return token;
-    },
-    session({ session, token }: { session: any, token: any }) {
-      if (token && session.user) {
-        session.user.id = token.id as string;
-      }
-      return session;
-    },
   },
-  providers: [
-    Credentials({
-      async authorize(credentials: any) {
-        if (!credentials?.email || !credentials?.password) return null;
-        
-        const user = dummyUsers.find(u => u.email === credentials.email);
-        
-        if (user && user.password === credentials.password) {
-          return {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            image: user.avatar,
-          };
-        }
-        
-        return null;
-      }
-    })
-  ],
 } satisfies NextAuthConfig;

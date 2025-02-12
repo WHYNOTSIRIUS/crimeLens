@@ -1,103 +1,69 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Image from "next/image";
-import { User } from "@/lib/types";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Trophy } from "lucide-react";
 
-interface LeaderboardUser extends User {
-  contributions: number;
-  rank: number;
+interface UserStats {
+  id: string;
+  name: string;
+  avatar: string;
+  verified: boolean;
+  reports: number;
+  upvotes: number;
+  comments: number;
 }
 
 interface LeaderboardProps {
-  users: LeaderboardUser[];
+  users: UserStats[];
 }
 
 export function Leaderboard({ users }: LeaderboardProps) {
-  const getRankColor = (rank: number) => {
-    switch (rank) {
-      case 1:
-        return "text-yellow-500";
-      case 2:
-        return "text-gray-400";
-      case 3:
-        return "text-amber-600";
-      default:
-        return "text-gray-700";
-    }
-  };
-
-  const getTrophyColor = (rank: number) => {
-    switch (rank) {
-      case 1:
-        return "text-yellow-500";
-      case 2:
-        return "text-gray-400";
-      case 3:
-        return "text-amber-600";
-      default:
-        return "text-gray-700";
-    }
-  };
-
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Top Contributors</CardTitle>
-        <CardDescription>
-          Users with the most reports and helpful comments
-        </CardDescription>
+        <CardTitle className="flex items-center gap-2">
+          <Trophy className="h-5 w-5 text-yellow-500" />
+          Top Contributors
+        </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {users.map((user) => (
-            <div
-              key={user.id}
-              className="flex items-center space-x-4 p-3 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              <div className="relative w-12 h-12">
-                <Image
-                  src={user.image || "/default-avatar.png"}
-                  alt={user.displayName}
-                  className="rounded-full"
-                  fill
-                  style={{ objectFit: "cover" }}
-                />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center space-x-2">
-                  <h3 className="font-medium">{user.displayName}</h3>
-                  {user.rank <= 3 && (
-                    <Trophy
-                      size={16}
-                      className={getTrophyColor(user.rank)}
-                    />
-                  )}
+      <CardContent className="space-y-6">
+        {users.map((user, index) => (
+          <div
+            key={user.id}
+            className="flex items-center gap-4"
+          >
+            <div className="relative">
+              <Avatar className="h-10 w-10">
+                <AvatarImage src={user.avatar} alt={user.name} />
+                <AvatarFallback>{user.name[0]}</AvatarFallback>
+              </Avatar>
+              {index < 3 && (
+                <div className="absolute -top-1 -right-1">
+                  <Badge variant={index === 0 ? "default" : index === 1 ? "secondary" : "outline"}>
+                    #{index + 1}
+                  </Badge>
                 </div>
-                <p className="text-sm text-gray-500">
-                  {user.contributions} contributions
-                </p>
-              </div>
-              <Badge
-                variant="secondary"
-                className={`${getRankColor(
-                  user.rank
-                )} font-semibold`}
-              >
-                #{user.rank}
-              </Badge>
+              )}
             </div>
-          ))}
-        </div>
+            <div className="flex-1 space-y-1">
+              <div className="flex items-center gap-2">
+                <p className="font-medium">{user.name}</p>
+                {user.verified && (
+                  <Badge variant="success" className="h-5 px-1">
+                    Verified
+                  </Badge>
+                )}
+              </div>
+              <div className="flex gap-4 text-sm text-muted-foreground">
+                <span>{user.reports} reports</span>
+                <span>{user.upvotes} upvotes</span>
+                <span>{user.comments} comments</span>
+              </div>
+            </div>
+          </div>
+        ))}
       </CardContent>
     </Card>
   );

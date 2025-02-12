@@ -1,5 +1,6 @@
 "use client";
 
+import { useSession } from "next-auth/react";
 import { CrimeReport } from "@/lib/dummy-data";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -13,7 +14,7 @@ import { CrimeCommentsDialog } from "./crime-comments-dialog";
 import { LoginPromptDialog } from "./login-prompt-dialog";
 import { EmergencyDialog } from "./emergency-dialog";
 import { getEmergencyContacts } from "@/lib/emergency-data";
-import { useSession } from "next-auth/react";
+// import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 
 interface CrimeCardProps {

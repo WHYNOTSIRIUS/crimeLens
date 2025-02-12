@@ -27,6 +27,7 @@ import Link from "next/link";
 import { useToast } from "@/components/ui/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { Apple } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth"; // Import the auth hook
 
 interface LoginFormData {
   email: string;
@@ -45,6 +46,7 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const router = useRouter();
   const { toast } = useToast();
+  const auth = useAuth(); // Initialize the auth hook
 
   const validateForm = () => {
     if (!formData.email) {
@@ -74,7 +76,7 @@ export default function LoginPage() {
 
     try {
       setLoading(true);
-      const response = await fetch("/api/auth/login", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -91,16 +93,20 @@ export default function LoginPage() {
         throw new Error(data.message || "Login failed");
       }
 
-      // Store the token if remember me is checked
-      if (formData.rememberMe) {
-        localStorage.setItem("token", data.token);
-      } else {
-        sessionStorage.setItem("token", data.token);
-      }
+      // Use the auth hook to store user data
+      auth.getState().login(
+        {
+          id: data.user.id,
+          name: data.user.name,
+          email: data.user.email,
+          avatar: data.user.avatar,
+        },
+        data.token
+      );
 
       toast({
-        title: "Welcome back!",
-        description: "You have successfully logged in.",
+        title: "Success",
+        description: "You have successfully logged in",
       });
 
       router.push("/");
