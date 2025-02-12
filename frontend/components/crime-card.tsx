@@ -8,12 +8,29 @@ import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import { ThumbsDown, ThumbsUp, MessageSquare } from "lucide-react";
 import Image from "next/image";
+import { useState } from "react";
+import { CrimeCommentsDialog } from "./crime-comments-dialog";
+import { LoginPromptDialog } from "./login-prompt-dialog";
+import { useSession } from "next-auth/react";
 
 interface CrimeCardProps {
   report: CrimeReport;
 }
 
 export function CrimeCard({ report }: CrimeCardProps) {
+  const { data: session } = useSession();
+  const [showComments, setShowComments] = useState(false);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [loginPromptMessage, setLoginPromptMessage] = useState("");
+
+  const handleAuthRequired = (action: string) => {
+    if (!session) {
+      setLoginPromptMessage(`Please log in to ${action}`);
+      setShowLoginPrompt(true);
+      return true;
+    }
+    return false;
+  };
   return (
     <Card>
       <CardHeader className="flex flex-row items-center gap-4">
@@ -61,19 +78,53 @@ export function CrimeCard({ report }: CrimeCardProps) {
 
         <div className="flex items-center justify-between">
           <div className="flex gap-2">
-            <Button variant="outline" size="sm">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => {
+                if (!handleAuthRequired("upvote")) {
+                  // Handle upvote logic here
+                }
+              }}
+            >
               <ThumbsUp className="mr-1 h-4 w-4" />
               {report.upvotes}
             </Button>
-            <Button variant="outline" size="sm">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => {
+                if (!handleAuthRequired("downvote")) {
+                  // Handle downvote logic here
+                }
+              }}
+            >
               <ThumbsDown className="mr-1 h-4 w-4" />
               {report.downvotes}
             </Button>
           </div>
-          <Button variant="outline" size="sm">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => {
+              if (!handleAuthRequired("view and add comments")) {
+                setShowComments(true);
+              }
+            }}
+          >
             <MessageSquare className="mr-1 h-4 w-4" />
             {report.comments.length} Comments
           </Button>
+          <CrimeCommentsDialog
+            isOpen={showComments}
+            onClose={() => setShowComments(false)}
+            report={report}
+          />
+          <LoginPromptDialog
+            isOpen={showLoginPrompt}
+            onClose={() => setShowLoginPrompt(false)}
+            message={loginPromptMessage}
+          />
         </div>
 
         {report.comments.length > 0 && (

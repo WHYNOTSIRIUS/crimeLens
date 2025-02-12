@@ -1,11 +1,20 @@
-export type CrimeReport = {
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  password: string;
+  avatar: string;
+  verified: boolean;
+  phoneNumber: string;
+}
+
+export interface CrimeReport {
   id: string;
   title: string;
   description: string;
   division: string;
   district: string;
   images: string[];
-  video?: string;
   postTime: string;
   crimeTime: string;
   upvotes: number;
@@ -17,31 +26,19 @@ export type CrimeReport = {
     avatar: string;
     verified: boolean;
   };
-  comments: Comment[];
-};
-
-export type Comment = {
-  id: string;
-  content: string;
-  proof: string;
-  author: {
+  comments: {
     id: string;
-    name: string;
-    avatar: string;
-    verified: boolean;
-  };
-  timestamp: string;
-};
-
-export type User = {
-  id: string;
-  email: string;
-  password: string;
-  name: string;
-  avatar: string;
-  verified: boolean;
-  phoneNumber: string;
-};
+    content: string;
+    proof?: string;
+    author: {
+      id: string;
+      name: string;
+      avatar: string;
+      verified: boolean;
+    };
+    timestamp: string;
+  }[];
+}
 
 export const dummyUsers: User[] = [
   {

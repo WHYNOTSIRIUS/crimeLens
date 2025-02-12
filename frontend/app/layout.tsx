@@ -4,6 +4,9 @@ import { Inter } from 'next/font/google';
 import { ThemeProvider } from '@/components/theme-provider';
 import Navbar from '@/components/navbar';
 import { Toaster } from '@/components/ui/toaster';
+import { auth } from '@/auth';
+import { headers } from 'next/headers';
+import NextAuthProvider from '@/components/next-auth-provider';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -20,13 +23,15 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <div className="min-h-screen bg-background">
-            <Navbar />
-            <main>{children}</main>
-            <Toaster />
-          </div>
-        </ThemeProvider>
+        <NextAuthProvider>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <div className="min-h-screen bg-background">
+              <Navbar />
+              <main>{children}</main>
+              <Toaster />
+            </div>
+          </ThemeProvider>
+        </NextAuthProvider>
       </body>
     </html>
   );
