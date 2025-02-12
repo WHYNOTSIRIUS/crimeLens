@@ -153,3 +153,100 @@ export const removeVote = async (
     next(createHttpError(500, "Internal Server Error"));
   }
 };
+
+
+export const getVotesByReport = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { reportId } = req.params;
+
+    const votes = await Vote.find({ crimeReport: reportId });
+
+    res.status(200).json({
+      votes,
+    });
+  } catch (error) {
+    next(createHttpError(500, "Internal Server Error"));
+  }
+};
+
+
+export const getVotesByUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { userId } = req.params;
+
+    const votes = await Vote.find({ user: userId });
+
+    res.status(200).json({
+      votes,
+    });
+  } catch (error) {
+    next(createHttpError(500, "Internal Server Error"));
+  }
+};
+
+export const getVotesByUserAndReport = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { userId, reportId } = req.params;
+
+    const votes = await Vote.find({ user: userId, crimeReport: reportId });
+
+    res.status(200).json({
+      votes,
+    });
+  } catch (error) {
+    next(createHttpError(500, "Internal Server Error"));
+  }
+};
+
+export const updateVote = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { voteId } = req.params;
+
+    const { vote } = req.body;
+
+    const updatedVote = await Vote.findByIdAndUpdate(voteId, { vote }, { new: true });
+
+    res.status(200).json({
+      message: "Vote updated successfully",
+      updatedVote,
+    });
+  } catch (error) {
+    next(createHttpError(500, "Internal Server Error"));
+  }
+};
+
+
+export const deleteVote = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { voteId } = req.params;
+
+    await Vote.findByIdAndDelete(voteId);
+
+    res.status(200).json({
+      message: "Vote deleted successfully",
+    });
+  } catch (error) {
+    next(createHttpError(500, "Internal Server Error"));
+  }
+};
+

@@ -1,22 +1,48 @@
 import express from "express";
-import authenticateUser from "../middlewares/authenticate";
-import { isVerifiedUser } from "../middlewares/isVerfiedUser";
-import { castVote, getVotes, removeVote } from "../controller/voteController";
+import authenticateUser from "../middleware/authenticate";
+import isVerifiedUser from "../middleware/isVerifiedUser";
+import {
+  castVote,
+  removeVote,
+  getVotesByReport,
+  getVotesByUser,
+  getVotesByUserAndReport,
+  deleteVote,
+} from "../controller/voteController";  
 
 const voteRouter = express.Router();
 
-// 📌 Cast a vote (Upvote/Downvote)
-voteRouter.post("/", authenticateUser, isVerifiedUser, castVote); // ✅
+// Create a vote
+voteRouter.post(
+  "/:reportId",
+  authenticateUser,
+  isVerifiedUser,
+  castVote
+);
 
-// 📌 Get total upvotes/downvotes for a report
-voteRouter.get("/:crimeReportId", getVotes);
-
-// 📌 Remove a user's vote
-voteRouter.delete(
-  "/:crimeReportId",
+// Update a vote
+voteRouter.put(
+  "/:voteId",
   authenticateUser,
   isVerifiedUser,
   removeVote
-); // ✅
+);
+
+// Delete a vote
+voteRouter.delete(
+  "/:voteId",
+  authenticateUser,
+  isVerifiedUser,
+  deleteVote
+);
+
+// Get votes for a report
+voteRouter.get("/report/:reportId", getVotesByReport);
+
+// Get votes for a user
+voteRouter.get("/user/:userId", getVotesByUser);
+
+// Get votes for a user and report
+voteRouter.get("/user/:userId/report/:reportId", getVotesByUserAndReport);
 
 export default voteRouter;

@@ -1,13 +1,14 @@
 import bcrypt from "bcryptjs";
 import jwt, { SignOptions, Secret } from "jsonwebtoken";
 import User, { IUser } from "../models/userModel";
-import { sendSMS } from "./twilioService";
+import { sendOtp, verifyOtp } from "./twilioService";
 import { generateOTP } from "../utils/otpUtils";
 import { EmailService } from "./emailService";
+import { config } from "../config/config";
 
 export class AuthService {
-  private static JWT_SECRET: Secret = process.env.JWT_SECRET!;
-  private static JWT_EXPIRES_IN = process.env.NODE_ENV === 'development' ? '7d' : '1d';
+  private static JWT_SECRET: Secret = config.jwtSecret!;
+  private static JWT_EXPIRES_IN = config.env === 'development' ? '7d' : '1d';
 
   static async register(userData: {
     email: string;
@@ -28,28 +29,16 @@ export class AuthService {
     // Hash password
     const hashedPassword = await bcrypt.hash(userData.password, 10);
 
-    // Generate phone verification OTP
-    const otp = generateOTP();
-    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
     // Create user
     const user = await User.create({
       ...userData,
       password: hashedPassword,
-      phoneVerificationOtp: otp,
-      phoneVerificationExpiry: otpExpiry,
       isEmailVerified: false,
       isPhoneVerified: false,
       role: "unverified"
     });
 
-    // Send OTP via SMS
-    await sendSMS(
-      userData.phoneNumber,
-      `Your verification code is: ${otp}. Valid for 10 minutes.`
-    );
-
-    // Send verification email
+    // Send verification email only
     await EmailService.sendVerificationEmail(user.email, user._id.toString());
 
     return user;
@@ -81,26 +70,30 @@ export class AuthService {
     return { user, accessToken, refreshToken };
   }
 
-  static async verifyPhone(phoneNumber: string, otp: string) {
-    const user = await User.findOne({
-      phoneNumber,
-      phoneVerificationOtp: otp,
-      phoneVerificationExpiry: { $gt: new Date() },
-    });
-
+  static async verifyPhone(code: string, token: string) {
+    // Get user by ID
+    const decoded = jwt.verify(token, config.jwtSecret!) as {
+      userId: string;
+      };
+    console.log(decoded,"decoded")
+    const user = await User.findById(decoded.userId);
     if (!user) {
-      throw new Error("Invalid or expired OTP");
+      throw new Error("User not found");
     }
 
+    // Verify OTP
+    const isValid = await verifyOtp(user.phoneNumber, code);
+    if (!isValid) {
+      throw new Error("Invalid or expired verification code");
+    }
+
+    // Update user status
     user.isPhoneVerified = true;
-    user.phoneVerificationOtp = undefined;
-    user.phoneVerificationExpiry = undefined;
-    
-    if (user.role === "unverified") {
+    if (user.isEmailVerified) {
       user.role = "verified";
     }
-
     await user.save();
+
     return user;
   }
 
@@ -122,10 +115,7 @@ export class AuthService {
 
     // Send OTP via SMS if phone number provided
     if (emailOrPhone === user.phoneNumber) {
-      await sendSMS(
-        user.phoneNumber,
-        `Your password reset code is: ${otp}. Valid for 10 minutes.`
-      );
+      await sendOtp(user.phoneNumber);
     } else {
       // TODO: Implement email sending
       console.log("Send email with OTP:", otp);
@@ -166,7 +156,7 @@ export class AuthService {
 
   static async verifyEmail(token: string) {
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || "your-secret-key") as {
+      const decoded = jwt.verify(token, config.jwtSecret!) as {
         userId: string;
         type: string;
       };
@@ -182,6 +172,9 @@ export class AuthService {
 
       user.isEmailVerified = true;
       await user.save();
+
+      // Send OTP only after email is verified
+      await sendOtp(user.phoneNumber);
 
       return user;
     } catch (error) {

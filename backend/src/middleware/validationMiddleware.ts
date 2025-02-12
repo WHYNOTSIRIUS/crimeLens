@@ -1,10 +1,12 @@
 import { Request, Response, NextFunction } from "express";
 
 export const validateRegistration = (req: Request, res: Response, next: NextFunction) => {
-  const { email, password, phoneNumber, displayName } = req.body;
+  const { displayName, email, password, phoneNumber } = req.body;
 
-  if (!email || !password || !phoneNumber || !displayName) {
-    return res.status(400).json({ message: "All fields are required" });
+  if (!displayName || !email || !password || !phoneNumber) {
+    return res.status(400).json({ 
+      message: "All fields are required: displayName, email, password, phoneNumber" 
+    });
   }
 
   // Email validation
@@ -13,15 +15,15 @@ export const validateRegistration = (req: Request, res: Response, next: NextFunc
     return res.status(400).json({ message: "Invalid email format" });
   }
 
-  // Password validation
-  if (password.length < 6) {
-    return res.status(400).json({ message: "Password must be at least 6 characters long" });
-  }
-
-  // Phone number validation (Bangladesh format)
-  const phoneRegex = /^(\+8801|8801|01)[3-9]{1}[0-9]{8}$/;
+  // Phone validation (Bangladeshi format)
+  const phoneRegex = /^(?:\+88|01)?\d{9,11}$/;
   if (!phoneRegex.test(phoneNumber)) {
     return res.status(400).json({ message: "Invalid phone number format" });
+  }
+
+  // Password validation
+  if (password.length < 8) {
+    return res.status(400).json({ message: "Password must be at least 8 characters" });
   }
 
   next();

@@ -11,7 +11,7 @@ interface CustomError extends Error {
 const router = express.Router();
 
 router.post("/register", upload.single("profileImage"), validateRegistration, async (req, res) => {
-  try {
+    try {
     let profileImageUrl = "";
     
     if (req.file) {
@@ -22,15 +22,18 @@ router.post("/register", upload.single("profileImage"), validateRegistration, as
     const userData = {
       ...req.body,
       profileImage: profileImageUrl,
-    };
+      };
+      
 
-    const user = await AuthService.register(userData);
+        const user = await AuthService.register(userData);
+        console.log(user);
     res.status(201).json({
       message: "Registration successful. Please verify your phone number.",
       user,
     });
   } catch (error) {
-    const err = error as CustomError;
+        const err = error as CustomError;
+        console.log(err);
     res.status(400).json({ message: err.message });
   }
 });
@@ -48,8 +51,9 @@ router.post("/login", validateLogin, async (req, res) => {
 
 router.post("/verify-phone", async (req, res) => {
   try {
-    const { phoneNumber, otp } = req.body;
-    const user = await AuthService.verifyPhone(phoneNumber, otp);
+      const { otp, token } = req.body;
+      console.log(otp,"otp",token,"token")
+    const user = await AuthService.verifyPhone(otp, token);
     res.json({
       message: "Phone number verified successfully",
       user,

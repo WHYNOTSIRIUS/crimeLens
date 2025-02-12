@@ -1,27 +1,27 @@
 import nodemailer from "nodemailer";
 import jwt from "jsonwebtoken";
-
+import { config } from "../config/config";
 export class EmailService {
   private static transporter = nodemailer.createTransport({
     // Configure your email service
     service: "gmail",
     auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASSWORD,
+      user: config.email_user,
+      pass: config.email_password,
     },
   });
 
   static async sendVerificationEmail(email: string, userId: string) {
     const token = jwt.sign(
       { userId, type: "email-verification" },
-      process.env.JWT_SECRET!,
+      config.jwtSecret!,
       { expiresIn: "24h" }
     );
 
-    const verificationLink = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
+    const verificationLink = `${config.frontend_url}/verification/email?token=${token}`;
 
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: config.email_user,
       to: email,
       subject: "Verify Your Email - CrimeLens",
       html: `

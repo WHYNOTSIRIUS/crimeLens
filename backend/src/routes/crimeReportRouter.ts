@@ -1,13 +1,14 @@
-import { isVerifiedUser } from "./../middlewares/isVerfiedUser";
 import express from "express";
-import authenticateUser from "../middlewares/authenticate";
+import authenticateUser from "../middleware/authenticate";
 import {
   createReport,
   deleteReport,
   getAllReports,
   getReportById,
 } from "../controller/crimeReportController";
-import { upload, uploadToCloudinary } from "../middlewares/uploadToCloudinary";
+import { upload } from "../middleware/uploadMiddleware";
+import isVerifiedUser from '../middleware/isVerifiedUser';
+
 const crimeReportRouter = express.Router();
 
 // 📌 Create a crime report (Only verified users)
@@ -15,8 +16,7 @@ crimeReportRouter.post(
   "/",
   authenticateUser,
   isVerifiedUser,
-  upload,
-  uploadToCloudinary,
+  upload.single('image'),
   createReport
 ); // ✅
 

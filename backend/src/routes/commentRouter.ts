@@ -1,7 +1,7 @@
 import express from "express";
-import authenticateUser from "../middlewares/authenticate";
-import { isVerifiedUser } from "../middlewares/isVerfiedUser";
-import { isAdmin } from "../middlewares/isAdmin";
+import authenticateUser from "../middleware/authenticate";
+import isVerifiedUser from "../middleware/isVerifiedUser";
+import { authorizeRole } from "../middleware/authorizeRole";
 import {
   addComment,
   getComments,
@@ -22,6 +22,6 @@ commentRouter.post(
 commentRouter.get("/:crimeReportId", getComments);
 
 // 📌 Admin deletes a comment
-commentRouter.delete("/:commentId", authenticateUser, isAdmin, deleteComment);
+commentRouter.delete("/:commentId", authenticateUser, authorizeRole(["admin", "superadmin"]), deleteComment);
 
 export default commentRouter;

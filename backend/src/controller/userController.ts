@@ -10,8 +10,8 @@ import { config } from "../config/config"; // Ensure JWT secret is stored secure
 import mongoose from "mongoose";
 
 import CrimeReport from "../models/crimeReportModel";
-import { sendMail } from "../middlewares/mailControl";
-import { sendOtp, verifyOtp } from "../service/twilloService";
+import { sendMail } from "../middleware/mailControl";
+import { sendOtp, verifyOtp } from "../services/twilioService";
 
 // Helper function to generate JWT token
 const generateToken = (userId: string) => {
@@ -86,7 +86,8 @@ export const signup = async (
       profileImage,
       bio: bio || "",
       contactInfo: contactInfo || "",
-      isVerified: false, // Default from schema
+      isEmailVerified: false, // Default from schema
+      isPhoneVerified: false, // Default from schema
       role: "unverified", // Default from schema
       isBanned: false, // Default from schema
     });
@@ -97,10 +98,11 @@ export const signup = async (
     res.status(201).json({
       message: "User registered successfully. Please verify your phone number.",
       user: {
-        id: newUser._id,
+        id: newUser._id.toString(),
         email: newUser.email,
         phoneNumber: newUser.phoneNumber,
-        isVerified: newUser.isVerified,
+        isEmailVerified: newUser.isEmailVerified,
+        isPhoneVerified: newUser.isPhoneVerified,
         role: newUser.role,
         isBanned: newUser.isBanned,
         profileImage: newUser.profileImage,
@@ -139,7 +141,7 @@ export const login = async (
     }
 
     // Generate JWT token
-    const token = generateToken((user._id as string).toString());
+    const token = generateToken(user._id.toString());
 
     res.status(200).json({ message: "Login successful", token });
   } catch (error) {
@@ -409,7 +411,7 @@ export const requestPasswordReset = async (
 
     // Store OTP in the database
     user.resetOtp = otp;
-    user.resetOtpExpiry = otpExpiry;
+    user.resetOtpExpiry = new Date(otpExpiry);
     await user.save();
 
     console.log("✅ Generated OTP:", otp, " for user:", email);
@@ -478,7 +480,7 @@ export const resetPassword = async (
       !user.resetOtp ||
       user.resetOtp !== otp ||
       !user.resetOtpExpiry ||
-      Date.now() > user.resetOtpExpiry
+      Date.now() > user.resetOtpExpiry.getTime()
     ) {
       console.error("❌ Invalid or expired OTP");
       return next(createHttpError(400, "Invalid or expired OTP"));
@@ -504,73 +506,25 @@ export const resetPassword = async (
   }
 };
 
-export const requestPhoneVerification = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const requestPhoneVerification = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { phoneNumber } = req.body;
-
-    if (!phoneNumber) {
-      return next(createHttpError(400, "Phone number is required"));
-    }
-
-    // Check if the user exists
-    const user = await User.findOne({ phoneNumber });
-    if (!user) {
-      return next(createHttpError(404, "User not found"));
-    }
-
-    if (user.isVerified) {
-      return next(createHttpError(400, "User is already verified"));
-    }
-
-    // Send OTP via Twilio
     await sendOtp(phoneNumber);
-
-    res.status(200).json({ message: "OTP sent successfully" });
+    res.json({ message: "Verification code sent successfully" });
   } catch (error) {
-    console.error("❌ Error requesting phone verification:", error);
-    next(createHttpError(500, "Internal Server Error"));
+    next(error);
   }
 };
 
-export const verifyPhone = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const verifyPhoneNumber = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { phoneNumber, otp } = req.body;
-
-    if (!phoneNumber || !otp) {
-      return next(createHttpError(400, "Phone number and OTP are required"));
+    const { phoneNumber, code } = req.body;
+    const isValid = await verifyOtp(phoneNumber, code);
+    if (!isValid) {
+      throw new Error("Invalid verification code");
     }
-
-    // Check if the user exists
-    const user = await User.findOne({ phoneNumber });
-    if (!user) {
-      return next(createHttpError(404, "User not found"));
-    }
-
-    if (user.isVerified) {
-      return next(createHttpError(400, "User is already verified"));
-    }
-
-    // Verify OTP
-    const isValidOtp = await verifyOtp(phoneNumber, otp);
-    if (!isValidOtp) {
-      return next(createHttpError(400, "Invalid or expired OTP"));
-    }
-
-    // Mark user as verified
-    user.isVerified = true;
-    await user.save();
-
-    res.status(200).json({ message: "Phone number verified successfully" });
+    res.json({ message: "Phone number verified successfully" });
   } catch (error) {
-    console.error("❌ Error verifying phone number:", error);
-    next(createHttpError(500, "Internal Server Error"));
+    next(error);
   }
 };

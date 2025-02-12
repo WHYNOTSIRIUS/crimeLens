@@ -1,6 +1,6 @@
 import express from "express";
-import authenticateUser from "../middlewares/authenticate";
-import { authorizeRole } from "../middlewares/authorizeRole";
+import authenticateUser from "../middleware/authenticate";
+import { authorizeRole } from "../middleware/authorizeRole";
 import {
   changePassword,
   getAllUsers,
@@ -13,8 +13,9 @@ import {
   signup,
   toggleBanUser,
   updateProfile,
+  requestPhoneVerification,
+  verifyPhoneNumber,
 } from "../controller/userController";
-import { sendOtp, verifyOtp } from "../service/twilloService";
 
 const userRouter = express.Router();
 
@@ -41,8 +42,8 @@ userRouter.put("/profile", authenticateUser, updateProfile); //tested and workin
 userRouter.put("/change-password", authenticateUser, changePassword); //tested and working ✅
 
 // Phone Number Verification
-userRouter.post("/request-phone-verification", authenticateUser, sendOtp); //tested and working ✅
-userRouter.post("/verify-phone", authenticateUser, verifyOtp); //tested and working ✅
+userRouter.post("/request-phone-verification", authenticateUser, requestPhoneVerification);
+userRouter.post("/verify-phone", authenticateUser, verifyPhoneNumber);
 
 // reset password
 

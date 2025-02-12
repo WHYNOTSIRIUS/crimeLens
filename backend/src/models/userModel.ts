@@ -19,6 +19,8 @@ export interface IUser extends Document {
   passwordResetOtp?: string;
   passwordResetExpiry?: Date;
   refreshToken?: string;
+  resetOtp?: string;
+  resetOtpExpiry?: Date;
   
   // Role & Status
   role: "unverified" | "verified" | "admin";
@@ -80,6 +82,8 @@ const userSchema = new Schema<IUser>(
     passwordResetOtp: String,
     passwordResetExpiry: Date,
     refreshToken: String,
+    resetOtp: String,
+    resetOtpExpiry: Date,
 
     // Role & Status
     role: {
@@ -119,15 +123,15 @@ const userSchema = new Schema<IUser>(
         delete ret.emailVerificationExpiry;
         delete ret.passwordResetOtp;
         delete ret.passwordResetExpiry;
+        delete ret.resetOtp;
+        delete ret.resetOtpExpiry;
         return ret;
       }
     }
   }
 );
 
-// Indexes
-userSchema.index({ email: 1 });
-userSchema.index({ phoneNumber: 1 });
+// Only define indexes that aren't already created by 'unique: true'
 userSchema.index({ role: 1 });
 userSchema.index({ isBanned: 1 });
 

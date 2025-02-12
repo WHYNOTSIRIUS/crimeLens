@@ -31,6 +31,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import Image from "next/image";
+import api from '@/lib/axios';
 
 interface RegisterFormData {
   name: string;
@@ -151,33 +152,35 @@ export default function RegisterPage() {
     try {
       setLoading(true);
       const formDataToSend = new FormData();
-      Object.entries(formData).forEach(([key, value]) => {
-        if (value !== null) {
-          formDataToSend.append(key, value);
-        }
-      });
-
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, {
-        method: "POST",
-        body: formDataToSend,
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message);
+      // Match the field names with backend expectations
+      formDataToSend.append("displayName", formData.name);
+      formDataToSend.append("email", formData.email);
+      formDataToSend.append("password", formData.password);
+      formDataToSend.append("phoneNumber", formData.phone);
+      if (formData.profileImage) {
+        formDataToSend.append("profileImage", formData.profileImage);
       }
+
+      const { data } = await api.post('/auth/register', formDataToSend, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      console.log("Response:", data);
 
       toast({
         title: "Registration Successful",
-        description: "Please check your email for verification instructions.",
+        description: "Please check your email for verification link",
       });
 
-      router.push("/verification/email");
+      // Redirect to check-email page
+      router.push('/verification/check-email');
+
     } catch (error: any) {
       toast({
         title: "Registration Failed",
-        description: error.message,
+        description: error.response?.data?.message || "Something went wrong",
         variant: "destructive",
       });
     } finally {
