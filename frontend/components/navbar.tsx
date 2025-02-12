@@ -1,8 +1,9 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { ReportDialog } from "@/components/report-dialog";
 import { ModeToggle } from "@/components/mode-toggle";
-import { AlertCircle, LogIn, Menu, Search, Shield } from "lucide-react";
+import { LogIn, Menu, Search, Shield } from "lucide-react";
 import Link from "next/link";
 import {
   DropdownMenu,
@@ -28,12 +29,13 @@ export default function Navbar() {
         </div>
         
         <div className="flex items-center gap-2 ml-auto">
-          <Link href="/report" className="flex-shrink-0">
-            <Button variant="destructive">
-              <AlertCircle className="mr-2 h-4 w-4" />
-              Report Crime
-            </Button>
-          </Link>
+          <ReportDialog
+            trigger={
+              <Button variant="destructive" className="flex-shrink-0">
+                Report Crime
+              </Button>
+            }
+          />
           
           <ModeToggle />
           
