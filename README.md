@@ -119,7 +119,7 @@ This platform ensures **transparency, accountability, and community involvement*
 
 ### **1️⃣ Clone the Repository**
 ```sh
-git clone https://github.com/your-username/crime-reporting.git
+git clone https://github.com/WHYNOTSIRIUS/crimeLens.git
 cd crime-reporting
 ```
 
