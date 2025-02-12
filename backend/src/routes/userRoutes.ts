@@ -9,12 +9,12 @@ import {
   login,
   logout,
   requestPasswordReset,
-  requestPhoneVerification,
+  // requestPhoneVerification,
   resetPassword,
   signup,
   toggleBanUser,
   updateProfile,
-  verifyPhone,
+  // verifyPhone,
 } from "../controller/userController";
 import { sendOtp, verifyOtp } from "../middlewares/firebaseAuth";
 
