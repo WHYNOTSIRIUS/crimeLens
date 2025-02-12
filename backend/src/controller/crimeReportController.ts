@@ -4,6 +4,7 @@ import CrimeReport from "../models/crimeReportModel";
 import { AuthRequest } from "../types/AuthRequest";
 import User from "../models/userModel"; // ✅ Import User model
 import mongoose from "mongoose";
+import { analyzeFakeReport } from "../services/fakeReportDetection";
 
 /**
  * @desc Create a new crime report
@@ -175,6 +176,59 @@ export const deleteReport = async (
     res.status(200).json({ message: "Crime report deleted successfully" });
   } catch (error) {
     console.error("❌ deleteReport Error:", error);
+    next(createHttpError(500, "Internal Server Error"));
+  }
+};
+
+export const checkCrimeReportVerification = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+    console.log("✅ crimeReportId:", id);
+
+    // ✅ Ensure crimeReportId is valid
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return next(createHttpError(400, "Invalid crime report ID"));
+    }
+
+    const report = await CrimeReport.findById(id);
+    if (!report) {
+      return next(createHttpError(404, "Crime report not found"));
+    }
+
+    res.status(200).json({
+      id,
+      isVerified: report.isVerified,
+      verificationScore: report.verificationScore,
+    });
+  } catch (error) {
+    next(createHttpError(500, "Internal Server Error"));
+  }
+};
+
+export const checkFakeReport = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+    console.log("✅ id:", id);
+    // verify if id is a valid crime report id
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return next(createHttpError(400, "Invalid crime report ID"));
+    }
+
+    const result = await analyzeFakeReport(id);
+
+    res.status(200).json({
+      message: "AI analysis completed",
+      analysis: result,
+    });
+  } catch (error) {
     next(createHttpError(500, "Internal Server Error"));
   }
 };

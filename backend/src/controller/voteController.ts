@@ -4,6 +4,7 @@ import createHttpError from "http-errors";
 import Vote from "../models/voteModel";
 import CrimeReport from "../models/crimeReportModel";
 import { AuthRequest } from "../types/AuthRequest";
+import { checkAndVerifyCrimeReport } from "../services/reportVerificationService";
 
 /**
  * @desc Upvote or Downvote a Crime Report
@@ -16,42 +17,53 @@ export const castVote = async (
   next: NextFunction
 ) => {
   try {
-    const { crimeReportId } = req.body;
+    const { crimeReportId, voteType } = req.body; // voteType: "upvote" or "downvote"
 
-    if (!crimeReportId) {
-      return next(createHttpError(400, "Crime report ID is required"));
+    if (!crimeReportId || !voteType) {
+      return next(
+        createHttpError(400, "Crime report ID and vote type are required")
+      );
     }
 
-    // Ensure the crime report exists
+    if (!["upvote", "downvote"].includes(voteType)) {
+      return next(
+        createHttpError(
+          400,
+          "Invalid vote type. Must be 'upvote' or 'downvote'"
+        )
+      );
+    }
+
+    // ✅ Ensure the crime report exists
     const crimeReport = await CrimeReport.findById(crimeReportId);
     if (!crimeReport) {
       return next(createHttpError(404, "Crime report not found"));
     }
 
-    // Check if the user has already voted
-    const existingVote = await Vote.findOne({
+    // ✅ Check if the user has already voted
+    let existingVote = await Vote.findOne({
       user: req.userId,
       crimeReport: crimeReportId,
     });
 
     if (!existingVote) {
-      // If no vote exists, default to upvote
-      const newVote = new Vote({
+      // ✅ If no vote exists, create a new one
+      existingVote = new Vote({
         user: req.userId,
         crimeReport: crimeReportId,
-        vote: "upvote",
+        vote: voteType,
       });
-      await newVote.save();
-    } else if (existingVote.vote === "upvote") {
-      // If the user already upvoted, remove the vote
+      await existingVote.save();
+    } else if (existingVote.vote === voteType) {
+      // ✅ If the user votes the same way again, remove the vote
       await existingVote.deleteOne();
     } else {
-      // If the user had downvoted, switch to upvote
-      existingVote.vote = "upvote";
+      // ✅ If the user had an opposite vote, switch to the new vote type
+      existingVote.vote = voteType;
       await existingVote.save();
     }
 
-    // Update verificationScore
+    // ✅ Recalculate Upvotes & Downvotes
     const upvotes = await Vote.countDocuments({
       crimeReport: crimeReportId,
       vote: "upvote",
@@ -61,8 +73,12 @@ export const castVote = async (
       vote: "downvote",
     });
 
+    // ✅ Update verification score
     crimeReport.verificationScore = Math.max(0, upvotes - downvotes);
     await crimeReport.save();
+
+    // ✅ Check if the report should be verified
+    await checkAndVerifyCrimeReport(crimeReportId);
 
     res.status(200).json({
       message: "Vote updated successfully",

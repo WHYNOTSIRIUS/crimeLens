@@ -3,6 +3,9 @@ import { v2 as cloudinary } from "cloudinary";
 import { Request, Response, NextFunction } from "express";
 import { config } from "../config/config";
 import streamifier from "streamifier";
+import sharp from "sharp";
+import path from "path";
+import fs from "fs";
 
 // ✅ Configure Cloudinary
 cloudinary.config({
@@ -18,8 +21,39 @@ const upload = multer({ storage }).fields([
   { name: "video", maxCount: 1 }, // Allow only 1 video
 ]);
 
+// ✅ Ensure watermark exists
+const watermarkPath = path.resolve(__dirname, "../../assets/watermark.png");
+if (!fs.existsSync(watermarkPath)) {
+  throw new Error("🚨 Watermark image not found! Add it to /assets folder.");
+}
+
 /**
- * Middleware to upload images and videos to Cloudinary
+ * 📌 Apply watermark to an image buffer using Sharp
+ */
+async function applyWatermark(imageBuffer: Buffer): Promise<Buffer> {
+  try {
+    const watermark = await sharp(watermarkPath)
+      .resize(150, 150) // Resize watermark to fit
+      .png()
+      .toBuffer();
+
+    return await sharp(imageBuffer)
+      .composite([
+        {
+          input: watermark,
+          gravity: "southeast", // Bottom-right position
+          blend: "overlay",
+        },
+      ])
+      .toBuffer();
+  } catch (error) {
+    console.error("❌ Error applying watermark:", error);
+    throw new Error("Watermark processing failed.");
+  }
+}
+
+/**
+ * 📌 Middleware to upload images/videos to Cloudinary with watermarking
  */
 export const uploadToCloudinary = async (
   req: Request,
@@ -36,11 +70,13 @@ export const uploadToCloudinary = async (
 
     const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 
-    // ✅ Upload images to Cloudinary
+    // ✅ Upload images to Cloudinary with watermarking
     if (files.images) {
-      console.log("✅ Uploading images to Cloudinary...");
+      console.log("✅ Processing images with watermark...");
       uploadedImageURLs = await Promise.all(
-        files.images.map((file) => {
+        files.images.map(async (file) => {
+          const watermarkedImage = await applyWatermark(file.buffer);
+
           return new Promise<string>((resolve, reject) => {
             const uploadStream = cloudinary.uploader.upload_stream(
               { folder: "crime_reports/images" },
@@ -49,7 +85,7 @@ export const uploadToCloudinary = async (
                 else resolve(result?.secure_url as string);
               }
             );
-            streamifier.createReadStream(file.buffer).pipe(uploadStream);
+            streamifier.createReadStream(watermarkedImage).pipe(uploadStream);
           });
         })
       );
