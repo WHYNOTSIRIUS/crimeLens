@@ -17,23 +17,28 @@ import {
   MapPin,
   Search,
 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { DatePickerWithRange } from "@/components/date-range-picker";
 import { addDays } from "date-fns";
 import { DateRange } from "react-day-picker";
+import { Pagination } from "@/components/pagination";
 
 export default function Home() {
   // Initialize state for filters
   const [division, setDivision] = useState<string>("");
   const [district, setDistrict] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: addDays(new Date(), -7),
-    to: new Date(),
-  });
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [sortBy, setSortBy] = useState("recent");
   const [showVerifiedOnly, setShowVerifiedOnly] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5; // Number of crime reports per page
+
+  // Scroll to top when page changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentPage]);
 
   // Get unique divisions and districts
   const divisions = useMemo(() => {
@@ -52,16 +57,26 @@ export default function Home() {
       const matchesSearch = !searchQuery || 
         report.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         report.description.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesDateRange = !dateRange?.from || !dateRange?.to ||
-        (new Date(report.crimeTime) >= dateRange.from &&
-         new Date(report.crimeTime) <= dateRange.to);
       const matchesVerification = !showVerifiedOnly || report.verificationScore >= 0.8;
+      
+      let matchesDate = true;
+      if (dateRange?.from) {
+        const from = new Date(dateRange.from);
+        from.setHours(0, 0, 0, 0);
+        const reportDate = new Date(report.crimeTime);
+        matchesDate = reportDate >= from;
+      }
+      if (dateRange?.to) {
+        const to = new Date(dateRange.to);
+        to.setHours(23, 59, 59, 999);
+        const reportDate = new Date(report.crimeTime);
+        matchesDate = matchesDate && reportDate <= to;
+      }
 
-      return matchesDivision && matchesDistrict && matchesSearch && 
-             matchesDateRange && matchesVerification;
+      return matchesDivision && matchesDistrict && matchesSearch && matchesVerification && matchesDate;
     });
 
-    // Sort the filtered results
+    // Sort the filtered reports
     return filtered.sort((a, b) => {
       switch (sortBy) {
         case "recent":
@@ -76,16 +91,25 @@ export default function Home() {
     });
   }, [division, district, searchQuery, dateRange, sortBy, showVerifiedOnly]);
 
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredReports.length / itemsPerPage);
+  const paginatedReports = filteredReports.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [division, district, searchQuery, dateRange, sortBy, showVerifiedOnly]);
+
   const handleReset = () => {
     setDivision("");
     setDistrict("");
     setSearchQuery("");
     setSortBy("recent");
     setShowVerifiedOnly(false);
-    setDateRange({
-      from: addDays(new Date(), -7),
-      to: new Date(),
-    });
+    setDateRange(undefined);
   };
 
   return (
@@ -188,13 +212,20 @@ export default function Home() {
       </div>
 
       <div className="space-y-6">
-        {filteredReports.map((report) => (
-          <CrimeCard key={report.id} report={report} />
-        ))}
-        
+        <div className="grid gap-6">
+          {paginatedReports.map((report) => (
+            <CrimeCard key={report.id} report={report} />
+          ))}
+        </div>
+
+        {/* Pagination */}
         {filteredReports.length > 0 && (
-          <div className="flex justify-center">
-            <Button variant="outline">Load More</Button>
+          <div className="mt-6">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
           </div>
         )}
       </div>

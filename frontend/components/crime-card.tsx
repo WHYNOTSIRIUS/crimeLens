@@ -1,17 +1,20 @@
 "use client";
 
 import { CrimeReport } from "@/lib/dummy-data";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
-import { ThumbsDown, ThumbsUp, MessageSquare } from "lucide-react";
+import { ThumbsDown, ThumbsUp, MessageSquare, PhoneCall } from "lucide-react";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { CrimeCommentsDialog } from "./crime-comments-dialog";
 import { LoginPromptDialog } from "./login-prompt-dialog";
+import { EmergencyDialog } from "./emergency-dialog";
+import { getEmergencyContacts } from "@/lib/emergency-data";
 import { useSession } from "next-auth/react";
+import { cn } from "@/lib/utils";
 
 interface CrimeCardProps {
   report: CrimeReport;
@@ -21,7 +24,10 @@ export function CrimeCard({ report }: CrimeCardProps) {
   const { data: session } = useSession();
   const [showComments, setShowComments] = useState(false);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [showEmergency, setShowEmergency] = useState(false);
   const [loginPromptMessage, setLoginPromptMessage] = useState("");
+
+  const emergencyContacts = getEmergencyContacts(report.division, report.district);
 
   const handleAuthRequired = (action: string) => {
     if (!session) {
@@ -31,11 +37,21 @@ export function CrimeCard({ report }: CrimeCardProps) {
     }
     return false;
   };
+
+  const handleReportOutdated = async (contact: any) => {
+    // TODO: Implement API endpoint to handle outdated emergency contact reports
+    console.log("Reported outdated contact:", contact);
+    // You would typically make an API call here to notify administrators
+  };
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center gap-4">
         <Avatar>
-          <AvatarImage src={report.author.avatar} />
+          <AvatarImage 
+            src={report.author.avatar} 
+            alt={report.author.name}
+          />
           <AvatarFallback>{report.author.name[0]}</AvatarFallback>
         </Avatar>
         <div className="flex-1">
@@ -56,7 +72,12 @@ export function CrimeCard({ report }: CrimeCardProps) {
           <Badge variant="outline">{report.division}</Badge>
           <Badge variant="outline">{report.district}</Badge>
           <Badge 
-            variant={report.verificationScore >= 0.8 ? "success" : "warning"}
+            variant="outline"
+            className={cn(
+              report.verificationScore >= 0.8 
+                ? "bg-green-100 text-green-800 hover:bg-green-100" 
+                : "bg-yellow-100 text-yellow-800 hover:bg-yellow-100"
+            )}
           >
             {Math.round(report.verificationScore * 100)}% Verified
           </Badge>
@@ -65,12 +86,16 @@ export function CrimeCard({ report }: CrimeCardProps) {
         
         <div className="grid grid-cols-2 gap-4 mb-4">
           {report.images.map((image, index) => (
-            <div key={index} className="relative aspect-video rounded-lg overflow-hidden">
+            <div key={index} className="relative aspect-video rounded-lg overflow-hidden bg-muted">
               <Image
                 src={image}
                 alt={`Evidence ${index + 1}`}
                 fill
                 className="object-cover"
+                onError={(e) => {
+                  // Set a default image or hide the image on error
+                  e.currentTarget.style.display = 'none';
+                }}
               />
             </div>
           ))}
@@ -102,30 +127,50 @@ export function CrimeCard({ report }: CrimeCardProps) {
               <ThumbsDown className="mr-1 h-4 w-4" />
               {report.downvotes}
             </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => {
+                if (!handleAuthRequired("view and add comments")) {
+                  setShowComments(true);
+                }
+              }}
+            >
+              <MessageSquare className="mr-1 h-4 w-4" />
+              {report.comments.length} Comments
+            </Button>
           </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => {
-              if (!handleAuthRequired("view and add comments")) {
-                setShowComments(true);
-              }
-            }}
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => setShowEmergency(true)}
           >
-            <MessageSquare className="mr-1 h-4 w-4" />
-            {report.comments.length} Comments
+            <PhoneCall className="mr-1 h-4 w-4" />
+            Emergency
           </Button>
-          <CrimeCommentsDialog
-            isOpen={showComments}
-            onClose={() => setShowComments(false)}
-            report={report}
-          />
-          <LoginPromptDialog
-            isOpen={showLoginPrompt}
-            onClose={() => setShowLoginPrompt(false)}
-            message={loginPromptMessage}
-          />
         </div>
+
+        <CrimeCommentsDialog
+          isOpen={showComments}
+          onClose={() => setShowComments(false)}
+          report={report}
+        />
+        <LoginPromptDialog
+          isOpen={showLoginPrompt}
+          onClose={() => setShowLoginPrompt(false)}
+          message={loginPromptMessage}
+        />
+        <EmergencyDialog
+          isOpen={showEmergency}
+          onClose={() => setShowEmergency(false)}
+          contacts={emergencyContacts}
+          onReportOutdated={handleReportOutdated}
+          isAuthenticated={!!session}
+          onAuthRequired={(action) => {
+            setLoginPromptMessage(`Please log in to ${action}`);
+            setShowLoginPrompt(true);
+          }}
+        />
 
         {report.comments.length > 0 && (
           <div className="mt-4 pt-4 border-t">
