@@ -1,0 +1,6 @@
+- [ ] Implement commenting system:
+  - Comment input with proof upload
+  - Comment list with pagination
+  - Reply functionality
+  - Vote system
+  - Report inappropriate content 

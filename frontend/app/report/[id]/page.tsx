@@ -1,0 +1,7 @@
+- [ ] Build detailed view with:
+  - Full report information
+  - Media gallery
+  - Verification status
+  - Emergency contacts
+  - Comment section
+  - Related reports 

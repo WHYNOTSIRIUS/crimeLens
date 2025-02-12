@@ -9,14 +9,12 @@ import {
   login,
   logout,
   requestPasswordReset,
-  requestPhoneVerification,
   resetPassword,
   signup,
   toggleBanUser,
   updateProfile,
-  verifyPhone,
 } from "../controller/userController";
-import { sendOtp, verifyOtp } from "../middlewares/firebaseAuth";
+import { sendOtp, verifyOtp } from "../service/twilloService";
 
 const userRouter = express.Router();
 
