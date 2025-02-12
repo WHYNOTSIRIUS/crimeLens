@@ -1,6 +1,6 @@
 import express from "express";
 import { AuthService } from "../services/authService";
-import { upload } from "../middleware/uploadMiddleware";
+import { upload, uploadToCloudinary } from "../middleware/uploadMiddleware";
 import { validateRegistration, validateLogin } from "../middleware/validationMiddleware";
 
 interface CustomError extends Error {
@@ -12,10 +12,18 @@ const router = express.Router();
 
 router.post("/register", upload.single("profileImage"), validateRegistration, async (req, res) => {
   try {
+    let profileImageUrl = "";
+    
+    if (req.file) {
+      const cloudinaryFile = await uploadToCloudinary(req.file);
+      profileImageUrl = cloudinaryFile.url;
+    }
+
     const userData = {
       ...req.body,
-      profileImage: req.file?.path || "",
+      profileImage: profileImageUrl,
     };
+
     const user = await AuthService.register(userData);
     res.status(201).json({
       message: "Registration successful. Please verify your phone number.",
