@@ -36,35 +36,31 @@ export const signup = async (
   next: NextFunction
 ) => {
   try {
-    const {
-      email,
-      password,
-      displayName,
-      phoneNumber,
-      profileImage,
-      bio,
-      contactInfo,
-    } = req.body;
+    const { email, password, displayName, phoneNumber, bio, contactInfo } =
+      req.body;
 
-    // console.log("✅ Received Signup Request:", req.body); // Debugging log
+    // ✅ Extract profileImage from Cloudinary upload
+    const profileImage = req.body.profileImage;
 
-    // **1️⃣ Validate Email Format**
+    // ✅ Check if profileImage exists
+    if (!profileImage) {
+      return next(createHttpError(400, "Profile image is required."));
+    }
+
+    // ✅ 1️⃣ Validate Email Format
     if (!email || !/^[\w.-]+@([\w-]+\.)+[\w-]{2,4}$/.test(email)) {
       return next(createHttpError(400, "Invalid email format"));
     }
 
-    // **2️⃣ Validate Phone Number Format**
-    const phoneRegex = /^(?:\+88|01)?\d{9,11}$/; // ✅ Accepts +88, 01, or direct 11-digit numbers
+    // ✅ 2️⃣ Validate Phone Number Format
+    const phoneRegex = /^(?:\+88|01)?\d{9,11}$/;
     if (!phoneNumber || !phoneRegex.test(phoneNumber)) {
       return next(
-        createHttpError(
-          400,
-          "Invalid phone number format. Must be a valid Bangladeshi number."
-        )
+        createHttpError(400, "Invalid Bangladeshi phone number format.")
       );
     }
 
-    // **3️⃣ Check if Email or Phone Number Already Exists**
+    // ✅ 3️⃣ Check if Email or Phone Number Already Exists
     const existingUser = await User.findOne({
       $or: [{ email }, { phoneNumber }],
     });
@@ -74,26 +70,26 @@ export const signup = async (
       );
     }
 
-    // **4️⃣ Hash Password**
+    // ✅ 4️⃣ Hash Password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // **5️⃣ Create New User**
+    // ✅ 5️⃣ Create New User
     const newUser = new User({
       email,
       password: hashedPassword,
       displayName,
       phoneNumber,
-      profileImage,
+      profileImage, // ✅ Cloudinary URL stored here
       bio: bio || "",
       contactInfo: contactInfo || "",
-      isVerified: false, // Default from schema
-      role: "unverified", // Default from schema
-      isBanned: false, // Default from schema
+      isVerified: false,
+      role: "unverified",
+      isBanned: false,
     });
 
     await newUser.save();
 
-    // **6️⃣ Return Success Response**
+    // ✅ 6️⃣ Return Success Response
     res.status(201).json({
       message: "User registered successfully. Please verify your phone number.",
       user: {

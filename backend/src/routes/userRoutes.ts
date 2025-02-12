@@ -17,6 +17,10 @@ import {
   // verifyPhone,
 } from "../controller/userController";
 import { sendOtp, verifyOtp } from "../middlewares/firebaseAuth";
+import {
+  uploadSingle,
+  uploadSingleToCloudinary,
+} from "../middlewares/uploadSingleImage";
 
 const userRouter = express.Router();
 
@@ -32,6 +36,10 @@ userRouter.post(
   //   console.log("✅ Request Body:", req.body);
   //   next();
   // },
+
+  uploadSingle,
+  uploadSingleToCloudinary,
+
   signup
 );
 userRouter.post("/login", login); //tested and working ✅
