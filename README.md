@@ -169,3 +169,4 @@ This project is licensed under the **MIT License**.
 
 🚀 **Ready to enhance crime reporting transparency?**
 💬 **Questions? Suggestions?** Feel free to open an **issue** or contribute to the project!
+
